@@ -1,6 +1,10 @@
 import React from 'react';
 import EditItem from './components/EditItem'
+import NutritionInfo from './components/NutritionInfo.js'
+//import AddFood from './pages/AddFood/AddFood';
 
+// App ID:      f95dc4d9
+// App Keys:    25ec40f8781dd35636bf9456ff98197b
 let baseURL = ''
 
 if (process.env.NODE_ENV === 'development') {
@@ -22,11 +26,18 @@ class App extends React.Component {
       editFood_qty: '',
       editExpiration_date: "2019-05-01",
       editStorage_area: '',
-      groceriesDetails: {}
+      groceriesDetails: {},
+        baseURL: 'https://api.nutritionix.com/v1_1/search/',
+        query: '?',
+        range: 'results=0%3A20&cal_min=0&cal_max=50000&',
+        fields: 'fields=item_name%2Cbrand_name%2Citem_id%2Cbrand_id%2Cnf_ingredient_statement%2Cnf_calories%2Cnf_cholesterol&',
+        authorization: 'appId=f95dc4d9&appKey=25ec40f8781dd35636bf9456ff98197b',
+        searchURL: ''
     }
     this.getGroceries = this.getGroceries.bind(this)
     this.handleChange = this.handleChange.bind(this)
     this.handleSubmit = this.handleSubmit.bind(this)
+    this.getNutritionInfo = this.getNutritionInfo.bind(this)
     this.handleAddGrocery = this.handleAddGrocery.bind(this)
     this.deleteGrocery = this.deleteGrocery.bind(this)
     this.handleEdit = this.handleEdit.bind(this)
@@ -70,7 +81,24 @@ class App extends React.Component {
         })
       }).catch(error => console.error({ 'Error': error }))
   }
-
+    getNutritionInfo (food_name) {
+        this.setState({
+            searchURL: this.state.baseURL + food_name + this.state.query + this.state.range + this.state.fields + this.state.authorization
+        }, () => {
+            fetch(this.state.searchURL)
+                .then(response => {
+                    return response.json()
+                }).then(json => {
+                    let whatever = []
+                whatever.push(json)
+                    console.log(json)
+                    this.setState({
+                    food: whatever,
+                    food_Name: ''
+                })},
+                err => console.log(err))
+        })
+    }
   handleAddGrocery(item) {
     const copyGroceries = [...this.state.groceries]
     copyGroceries.unshift(item)
@@ -167,6 +195,9 @@ setIndividualItem(item) {
             </ul>
           </div>
         </nav>
+        <div>
+        
+        </div>
         <form onSubmit={this.handleSubmit}>
           <label htmlFor="food_name">Food Name</label>
           <input type='text' id='food_name' value={this.state.food_name} placeholder='New Item' onChange={this.handleChange} />
@@ -191,12 +222,17 @@ setIndividualItem(item) {
                   <td>{item.expiration_date}</td>
                   <td><button onClick={() => this.deleteGrocery(item._id)}>X</button></td>
                   <td><button onClick={() => this.setIndividualItem(item)}>Edit</button></td>
-
+                    <td><button onClick={() => this.getNutritionInfo(item.food_name)}>Nutrition Info</button></td>
                 </tr>
               )
             })}
           </tbody>
         </table>
+          {(this.state.food)
+              ? <NutritionInfo food={this.state.food} />
+              : ''
+          }
+
         <EditItem handleEdit={this.handleEdit} editStorage_area = {this.state.editStorage_area} editFood_name = {this.state.editFood_name} editFood_qty={this.state.editFood_qty} editExpiration_date={this.state.editExpiration_date} handleChange = {this.handleChange} groceriesDetails = {this.state.groceriesDetails}/>
       </div>
     );
