@@ -1,5 +1,11 @@
 import React from 'react';
+import { BrowserRouter as Router, Route, Link} from 'react-router-dom'
+import { Redirect } from 'react-router-dom'
 import EditItem from './components/EditItem'
+import NewForm from './components/NewForm'
+import NavBar from './components/NavBar'
+import NutritionInfo from './components/NutritionInfo.js'
+import RecipeInfo from './components/RecipeInfo'
 
 let baseURL = ''
 
@@ -22,7 +28,15 @@ class App extends React.Component {
       editFood_qty: '',
       editExpiration_date: "2019-05-01",
       editStorage_area: '',
-      groceriesDetails: {}
+      groceriesDetails: {},
+      baseURL: 'https://api.nutritionix.com/v1_1/search/',
+      query: '?',
+      range: 'results=0%3A20&cal_min=0&cal_max=50000&',
+      fields: 'fields=item_name%2Cbrand_name%2Citem_id%2Cbrand_id%2Cnf_ingredient_statement%2Cnf_calories%2Cnf_cholesterol&',
+      authorization: 'appId=f95dc4d9&appKey=25ec40f8781dd35636bf9456ff98197b',
+      searchURL: ''
+
+      // "https://api.edamam.com/search?q=chicken&app_id=$9d94e852&app_key=$480a66a770af9cbc380a775b8959453c&from=0&to=3
     }
     this.getGroceries = this.getGroceries.bind(this)
     this.handleChange = this.handleChange.bind(this)
@@ -31,6 +45,8 @@ class App extends React.Component {
     this.deleteGrocery = this.deleteGrocery.bind(this)
     this.handleEdit = this.handleEdit.bind(this)
     this.setIndividualItem = this.setIndividualItem.bind(this)
+    this.getNutritionInfo = this.getNutritionInfo.bind(this)
+    
   }
   getGroceries() {
     fetch(baseURL + '/groceries')
@@ -45,6 +61,7 @@ class App extends React.Component {
   }
   componentDidMount() {
     this.getGroceries()
+    
   }
 
   handleChange(event) {
@@ -146,59 +163,97 @@ setIndividualItem(item) {
               editExpiration_date: '2019-05-01',
               editStorage_area: ''
             })
+            
         }).catch (error => console.error({'Error': error}))
       }
+
+
+      getNutritionInfo (food_name) {
+        this.setState({
+            searchURL: this.state.baseURL + food_name + this.state.query + this.state.range + this.state.fields + this.state.authorization
+        }, () => {
+            fetch(this.state.searchURL)
+                .then(response => {
+                    return response.json()
+                }).then(json => {
+                    let whatever = []
+                whatever.push(json)
+                    console.log(json)
+                    this.setState({
+                    food: whatever,
+                    food_Name: ''
+                })},
+                err => console.log(err))
+        })
+    }
+
+
+
+
+
+
   render() {
     return (
+      <Router>
       <div className="container-fluid">
-        <nav className="navbar navbar-expand-lg navbar-dark bg-dark">
-          <a className="navbar-brand" href="#">Navbar</a>
-          <button className="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
-            <span className="navbar-toggler-icon"></span>
-          </button>
-          <div class="collapse navbar-collapse" id="navbarSupportedContent">
-            <ul class="navbar-nav mr-auto">
-              <li class="nav-item">
-                <a class="nav-link" href="#">Link</a>
-              </li>
-              <li class="nav-item">
-                <a class="nav-link" href="#">Link</a>
-              </li>
-            </ul>
-          </div>
-        </nav>
-        <form onSubmit={this.handleSubmit}>
-          <label htmlFor="food_name">Food Name</label>
-          <input type='text' id='food_name' value={this.state.food_name} placeholder='New Item' onChange={this.handleChange} />
-          <label htmlFor="food_qty">Quantity</label>
-          <input type='number' id='food_qty' value={this.state.food_qty} placeholder='1' onChange={this.handleChange} />
-          <label htmlFor="expiration_date">Expiration Date</label>
-          <input type='date' id='expiration_date' value={this.state.expiration_date} placeholder='' onChange={this.handleChange} />
-          <label htmlFor="storage_area">Storage Area</label>
-          <input type='text' id='storage_area' value={this.state.storage_area} placeholder='' onChange={this.handleChange} />
-          <input type='submit' value='Add Food' />
-        </form>
+       <NavBar />
+      <NewForm handleChange = {this.handleChange} handleSubmit = {this.handleSubmit} food_name = {this.state.food_name} food_qty = {this.state.food_qty} storage_area = {this.state.storage_area} expiration_date={this.state.expiration_date}/>
 
         <table>
           <tbody>
+            <tr>
+              <td>Food Name</td>
+              <td>Food Qty</td>
+              <td>Storage Area</td>
+              <td>Created Date</td>
+              <td>Exp Date</td>
+              
+            </tr>
             {this.state.groceries.map(item => {
+              // below converts expire date to a string - probably should put these into a funciton
+              let itemDate = new Date(item.expiration_date)
+              let itemYear = itemDate.getFullYear();
+              let itemMonth = (1 + itemDate.getMonth()).toString().padStart(2, "0");
+              let itemDay = itemDate.getDate().toString().padStart(2, "0");
+              let expDate = itemYear+'-'+ itemMonth+'-'+ itemDay
+
+              // below convertes createdAt to a string
+              let createDate = new Date(item.expiration_date)
+              let createYear = createDate.getFullYear();
+              let createMonth = (1 + createDate.getMonth()).toString().padStart(2, "0");
+              let createDay = createDate.getDate().toString().padStart(2, "0");
+              let createdDate = createYear+'-'+ createMonth+'-'+ createDay
+
+
+              
               return (
                 <tr key={item._id}>
                   <td>{item.food_name}</td>
                   <td>{item.food_qty}</td>
                   <td>{item.storage_area}</td>
-                  <td>{item.createdAt}</td>
-                  <td>{item.expiration_date}</td>
+                  <td>{createdDate}</td>
+                  <td>{expDate}</td>
                   <td><button onClick={() => this.deleteGrocery(item._id)}>X</button></td>
-                  <td><button onClick={() => this.setIndividualItem(item)}>Edit</button></td>
+                  <td><Link to='/edit'><button onClick={() => this.setIndividualItem(item)}>Edit</button></Link></td>
+                  <td><button onClick={() => this.getNutritionInfo(item.food_name)}>Nutrition Info</button></td>
 
                 </tr>
               )
             })}
           </tbody>
         </table>
-        <EditItem handleEdit={this.handleEdit} editStorage_area = {this.state.editStorage_area} editFood_name = {this.state.editFood_name} editFood_qty={this.state.editFood_qty} editExpiration_date={this.state.editExpiration_date} handleChange = {this.handleChange} groceriesDetails = {this.state.groceriesDetails}/>
+        {(this.state.food)
+              ? <NutritionInfo food={this.state.food} />
+              : ''
+          }
+        <Route path='/edit' render={(props)=><EditItem editFood_name={this.state.editFood_name}handleEdit={this.handleEdit} editStorage_area = {this.state.editStorage_area} editFood_name = {this.state.editFood_name} editFood_qty={this.state.editFood_qty} editExpiration_date={this.state.editExpiration_date} handleChange = {this.handleChange} groceriesDetails = {this.state.groceriesDetails}/>}/>
+        
+        <RecipeInfo />
+        
+        {/*
+        <EditItem handleEdit={this.handleEdit} editStorage_area = {this.state.editStorage_area} editFood_name = {this.state.editFood_name} editFood_qty={this.state.editFood_qty} editExpiration_date={this.state.editExpiration_date} handleChange = {this.handleChange} groceriesDetails = {this.state.groceriesDetails}/> */}
       </div>
+      </Router>
     );
   }
 }
